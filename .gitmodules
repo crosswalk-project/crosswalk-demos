@@ -1,0 +1,3 @@
+[submodule "MemoryGame/src"]
+	path = MemoryGame/src
+	url = https://github.com/01org/webapps-memory-game-older-kids
