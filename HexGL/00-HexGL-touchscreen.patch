@@ -1,0 +1,420 @@
+From e7b3928b21b1579b82a32527eb6f3d34f9e27350 Mon Sep 17 00:00:00 2001
+From: Harry Shan <zhenyu.shan@intel.com>
+Date: Fri, 27 Sep 2013 15:55:53 +0800
+Subject: [PATCH] Add support and 3 customizations for touch based devices.
+
+This game is only for desktop machines. We need to handle touch
+events in JavaScript to make it work on touch based mobile devices.
+Add listeners for touch events and process them to control the
+directions of the vehicle.
+
+Besides, it provides control hints on screen because it's not obvious
+for touch based screen to how to control the vehicle. And remove
+the score board and set the game quality as a low level due to
+the limitation of mobile devices.
+
+Contributions here are licensed under 'Creative Commons Attribution
+-NonCommercial 3.0 Unported License'.
+
+Signed-off-by: Harry Shan <zhenyu.shan@intel.com>
+---
+ bkcore/hexgl/HexGL.js        |   10 ++-
+ bkcore/hexgl/ShipControls.js |  156 +++++++++++++++++++++++++++++++++++++++++-
+ index.html                   |   42 ++++++++++--
+ textures/down.png            |  Bin 0 -> 639 bytes
+ textures/left.png            |  Bin 0 -> 565 bytes
+ textures/right.png           |  Bin 0 -> 561 bytes
+ textures/up.png              |  Bin 0 -> 656 bytes
+ 7 files changed, 200 insertions(+), 8 deletions(-)
+ create mode 100644 textures/down.png
+ create mode 100644 textures/left.png
+ create mode 100644 textures/right.png
+ create mode 100644 textures/up.png
+
+diff --git a/bkcore/hexgl/HexGL.js b/bkcore/hexgl/HexGL.js
+index d93acd9..07a2500 100644
+--- a/bkcore/hexgl/HexGL.js
++++ b/bkcore/hexgl/HexGL.js
+@@ -149,6 +149,8 @@ bkcore.hexgl.HexGL.prototype.initGameplay = function()
+ 		},
+ 		onFinish: function() {
+ 			self.displayScore(this.finishTime, this.lapTimes);
++			// Reset the game and enter the new game after 5 seconds.
++			window.setTimeout(function() { self.reset(); }, 5000);
+ 		}
+ 	});
+ 
+@@ -233,14 +235,16 @@ bkcore.hexgl.HexGL.prototype.displayScore = function(f, l)
+ 		+'&p[url]='+encodeURIComponent('http://hexgl.bkcore.com')
+ 		+'&p[images][0]='+encodeURIComponent('http://hexgl.bkcore.com/image.png'));
+ 
+-	bkcore.hexgl.Ladder.displayLadder('finish-ladder', t, d, 8);
++	// Comment out for mobile devices for no place to display the score.
++	// bkcore.hexgl.Ladder.displayLadder('finish-ladder', t, d, 8);
+ 
+ 	if(this.manager.get('game').objects.lowFPS >= 999)
+ 		sl != undefined && (sl.innerHTML = 'Note: Your framerate was pretty low, you should try a lesser graphic setting!');
+ 	else
+ 		sl != undefined && (sl.innerHTML = '');
+ 
+-	dc.style.display = 'block';
++	// Comment out for mobile devices.
++	// dc.style.display = 'block';
+ }
+ 
+ bkcore.hexgl.HexGL.prototype.initRenderer = function()
+@@ -389,4 +393,4 @@ bkcore.hexgl.HexGL.prototype.tweakShipControls = function()
+ 		c.driftLerp = 0.3;
+ 		c.angularLerp = 0.4;
+ 	}
+-}
+\ No newline at end of file
++}
+diff --git a/bkcore/hexgl/ShipControls.js b/bkcore/hexgl/ShipControls.js
+index 859d6ec..a48c916 100644
+--- a/bkcore/hexgl/ShipControls.js
++++ b/bkcore/hexgl/ShipControls.js
+@@ -8,6 +8,8 @@
+ var bkcore = bkcore || {};
+ bkcore.hexgl = bkcore.hexgl || {};
+ 
++var touchesHolder = touchesHolder || new Array;
++
+ bkcore.hexgl.ShipControls = function(domElement)
+ {
+ 	var self = this;
+@@ -113,6 +115,7 @@ bkcore.hexgl.ShipControls = function(domElement)
+ 		left: false,
+ 		right: false
+ 	};
++	this.sliceWidth = document.body.clientWidth / 4;
+ 
+ 	function onKeyDown(event) 
+ 	{
+@@ -154,8 +157,159 @@ bkcore.hexgl.ShipControls = function(domElement)
+ 		}
+ 	};
+ 
++	// Below touch related functions are for handling touch events
++	// from user input so that we can control the ship on touch
++	// based devices.
++	function cloneTouch(touch)
++	{
++		return { identifier: touch.identifier,
++		         pageX: touch.pageX, pageY: touch.pageY,
++		         clientX: touch.clientX, clientY: touch.clientY };
++	}
++
++	function findTouchIndexById(idToFind)
++	{
++		for(var i = 0; i < touchesHolder.length; i++)
++		{
++			var id = touchesHolder[i].identifier;
++			if(id == idToFind)
++				return i;
++		}
++		return -1;  // not found.
++	}
++
++	function onTouchStart(event)
++	{
++		event.preventDefault();
++		var touches = event.changedTouches;
++		var sliceWidth = self.sliceWidth;
++		for(var i = 0; i < touches.length; i++)
++		{
++			var x = touches[i].clientX;
++			touchesHolder.push(cloneTouch(touches[i]));
++
++			if(x >= 0 && x < sliceWidth)
++				self.key.left = true;
++			else if(x >= sliceWidth && x < sliceWidth * 2)
++				self.key.right = true;
++			else if(x >= sliceWidth * 2 && x < sliceWidth * 3)
++				self.key.backward = true;
++			else if(x >= sliceWidth * 3 && x <= sliceWidth * 4)
++				self.key.forward = true;
++		}
++	}
++
++	function onTouchEndOrCancelled(event)
++	{
++		event.preventDefault();
++		var touches = event.changedTouches;
++		var sliceWidth = self.sliceWidth;
++		for(var i = 0; i < touches.length; i++)
++		{
++			var x = touches[i].clientX;
++			var idx = findTouchIndexById(touches[i].identifier);
++			if(x >= 0 && x < sliceWidth)
++				self.key.left = false;
++			else if(x >= sliceWidth && x < sliceWidth * 2)
++				self.key.right = false;
++			else if(x >= sliceWidth * 2 && x < sliceWidth * 3)
++				self.key.backward = false;
++			else if(x >= sliceWidth * 3 && x <= sliceWidth * 4)
++				self.key.forward = false;
++			touchesHolder.splice(idx, 1);
++		}
++	}
++
++	function handleMoveBetweenAreas(from, to)
++	{
++		var touchDown;
++		switch(from)
++		{
++		case 0:
++			touchDown = self.key.left;
++			self.key.left = false;
++			break;
++		case 1:
++			touchDown = self.key.right;
++			self.key.right = false;
++			break;
++		case 2:
++			touchDown = self.key.backward;
++			self.key.backward = false;
++			break;
++		case 3:
++			touchDown = self.key.forward;
++			self.key.forward = false;
++			break;
++		default:
++			break;
++		}
++
++		switch(to)
++		{
++		case 0:
++			if(touchDown)
++				self.key.left = true;
++			break;
++		case 1:
++			if(touchDown)
++				self.key.right = true;
++			break;
++		case 2:
++			if(touchDown)
++				self.key.backward = true;
++			break;
++		case 3:
++			if(touchDown)
++				self.key.forward = true;
++			break;
++		default:
++			break;
++		}
++	}
++
++	function onTouchMove(event)
++	{
++		event.preventDefault();
++		var touches = event.changedTouches;
++		var sliceWidth = self.sliceWidth;
++		for(var i = 0; i < touches.length; i++)
++		{
++			var idx = findTouchIndexById(touches[i].identifier);
++			var afterX = touches[i].clientX;
++			var origX = touchesHolder[idx].clientX;
++
++			var from, to;
++			if(origX >= 0 && origX < sliceWidth)
++				from = 0;
++			else if(origX >= sliceWidth && origX < sliceWidth * 2)
++				from = 1;
++			else if(origX >= sliceWidth * 2 && origX < sliceWidth * 3)
++				from = 2;
++			else if(origX >= sliceWidth * 3 && origX <= sliceWidth * 4)
++				from = 3;
++
++			if(afterX >= 0 && afterX < sliceWidth)
++				to = 0;
++			else if(afterX >= sliceWidth && afterX < sliceWidth * 2)
++				to = 1;
++			else if(afterX >= sliceWidth * 2 && afterX < sliceWidth * 3)
++				to = 2;
++			else if(afterX >= sliceWidth * 3 && afterX <= sliceWidth * 4)
++				to = 3;
++
++			if(from != to)
++				handleMoveBetweenAreas(from, to);
++			touchesHolder.splice(idx, 1, cloneTouch(touches[i]));
++		}
++	}
++
+ 	domElement.addEventListener('keydown', onKeyDown, false);
+ 	domElement.addEventListener('keyup', onKeyUp, false);
++	domElement.addEventListener('touchstart', onTouchStart, false);
++	domElement.addEventListener('touchend', onTouchEndOrCancelled, false);
++	domElement.addEventListener('touchcancel', onTouchEndOrCancelled, false);
++	domElement.addEventListener('touchmove', onTouchMove, false);
+ };
+ 
+ bkcore.hexgl.ShipControls.prototype.control = function(threeMesh)
+@@ -532,4 +686,4 @@ bkcore.hexgl.ShipControls.prototype.getShield = function(scale)
+ 		this.shield
+ 		* (scale == undefined ? 1 : scale)
+ 	);
+-};
+\ No newline at end of file
++};
+diff --git a/index.html b/index.html
+index 7292f2d..d725316 100644
+--- a/index.html
++++ b/index.html
+@@ -20,18 +20,49 @@
+ 			canvas { pointer-events:none; }
+ 			#overlay{
+ 				position: absolute;
+-				z-index: 9999;
++				z-index: 5000;
+ 				top: 0;
+ 				left: 0;
+ 				width: 100%;
+ 			}
++			#controlmask{
++				position: fixed;
++				z-index: 9999;
++				background-color: #000;
++				width: 100%;
++				height: 100%;
++				top: 0;
++				opacity: 0.5;
++			}
++			.control{
++				z-index: 10000;
++				position: relative;
++				width: 50%;
++			}
++			table{
++				width: 100%;
++				height: 100%;
++				margin:0 auto;
++			}
++			td{
++				width: 25%;
++			}
+ 		</style>
+ 	</head>
+ 
+ 	<body>
++		<div id="controlmask">
++		<table>
++		<tr>
++			<td align="center"><img src="textures/left.png" class="control" id="left"></img></td>
++			<td align="center"><img src="textures/right.png" class="control" id="right"></img></td>
++			<td align="center"><img src="textures/down.png" class="control" id="down"></img></td>
++			<td align="center"><img src="textures/up.png" class="control" id="up"></img></td>
++		</tr>
++		</table>
++		</div>
+ 		<div id="overlay"></div>
+ 		<div id="main"></div>
+-
+ 		<script src="js/Three.dev.js"></script>
+ 		<script src="js/ShaderExtras.js"></script>
+ 		<script src="js/postprocessing/EffectComposer.js"></script>
+@@ -81,9 +112,9 @@
+ 					height: SCREEN_HEIGHT,
+ 					container: container,
+ 					overlay: overlay,
+-					quality: bkcore.Utils.getURLParameter('quality'),
++					quality: 0,
+ 					difficulty: bkcore.Utils.getURLParameter('difficulty'),
+-					half: bkcore.Utils.getURLParameter('half'),
++					half: false,
+ 					track: 'Cityscape'
+ 				});
+ 
+@@ -92,6 +123,9 @@
+ 						console.log("ALL LOADED.");
+ 						hexGL.init();
+ 						hexGL.start();
++						window.setTimeout(function() {
++							document.getElementById("controlmask").style.display = "none";
++						}, 5000);
+ 					},
+ 					onError: function(s){
+ 						console.log("ERROR ON "+s+".");
+diff --git a/textures/down.png b/textures/down.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..77ba71bb21adcf3998c16bf5ce712fac8fa3e4b6
+GIT binary patch
+literal 639
+zcmeAS@N?(olHy`uVBq!ia0vp^3qY8I4M=vMPuFE&U~=<xaSW-r_4bb8x~2dT*T83w
+z7BsZ9y)&KC6TftNgn-SVSnEWl=~E}a*MDK<xj$Q??fHJYdwdNHTn>yJ3m8O5WH15s
+zun0IXuqre#FljI_0@;i}N~D2_3<gLu2hboc2cSU#3`{^a6OhsXnU2Z0P+@2PdY9b^
+z#tXBYGXAnG_}YBo7pKE(_J_6euSqp9MA>t!ozJkPZhP+UrR;ORZf?4Eo-3^8*S_s_
+zVHbWy9(+{KeeN^Q0?{pXVH*_oWzJ&Q(sa%L{j}7Lb(@;5tuMI!|L~gmYaVc(x99`v
+zi?SE}AARBW)+UBk&$y~qhY2`bjd9HX+?2atf^mvy%Xuy)4Q-D3qAUSn0(ROQ3)U>~
+zUlZy0T3tKiFVF!^7k)8j{0$LX_?7v>ua#;}uh|!T4fbuZGvEZ$%f2kXyJo)C>*bSx
+zibY}_!^3k}*Un$0{o+>FTA*|ZYi#81xqmkn%g+b_vcu!8Uti9<=6_MNB=jiI8=AYC
+z)~&n&be?PY1yRvx$JfhWaP6AMSN>$N+q&g9xOU9~8k7YzC>x}3DNtY%P{0c)@LB^X
+zu=obouOqV-F~qtWwp{ZMY*@EY!s+#L4TtavdUv=z7K@ubyAcuvOjrz_u6{1-oD!M<
+D|0nLT
+
+literal 0
+HcmV?d00001
+
+diff --git a/textures/left.png b/textures/left.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..510341ace2f78cb901ff7f2607dfa19abae67434
+GIT binary patch
+literal 565
+zcmeAS@N?(olHy`uVBq!ia0vp^3qY8I4M=vMPuFE&VEp6h;uunK>+M~~yruw=w!rU~
+zTsb?1(|ja$)y*>5sO)h2#Bco~zasO3pGn!37f!PRbz%n%i;fk}*}ZOdZqu^1#2=jR
+z4b7ZXY#1*cd0Q6E<KN(NXm{LtrWE_=`DJ#Dn!@uKI@{D87Cq#gkWs;;A_d`w-F^Rk
+z{nChE`@|LI3(jNsY3h4<&-eZ)#vm;l#(6g$>%_GdnzpDroD-kN;GghTV1?y3j`JJ^
+zCs(&S^fI)j_sK8lR&;nc^D|4vPc@+hOJ{pDOv_bbjM~)6lCg7HWkaX)0=I@k#xohT
+zWtdFWc>*fbgc6=^u6WkWEHbZ?MZ-pz^MYc4FlRu;vLosX_P?Adw4a&l;*=j^If2WL
+z+-KB1Gi8TxQsJ^AdlR@#RQ(R?*m}J@-IZA<_u=OLO-9R3c4qKTpDlF0WzF44!9|(B
+zLgongc0O;KyUtMcUXOxH@T0p1P9{L+Q%PY)u8SNWZWbSNYfyD6neE@88uwbwg^}yy
+ziPKLu_ciU*a_YJFtk|^Wh46&WZ5h8^oVS!NQoLohI%>|PZK*((p8oB}u0GqmOk8e1
+zxqq+F;+j}zTShfdnd!ZE`pdWEc4u^KJMwOuocIP=plU8bCKl|`#lX<Odw=@sIbkWM
+R)ucg6JYD@<);T3K0RREB-a!BW
+
+literal 0
+HcmV?d00001
+
+diff --git a/textures/right.png b/textures/right.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..81509869d2862d847fd5039068b5443bb6be9e8e
+GIT binary patch
+literal 561
+zcmeAS@N?(olHy`uVBq!ia0vp^3qY8I4M=vMPuFE&VEp0f;uunK>+M~~tmXuPwug6A
+z+k+1FTAMdX_g~(;Ok1&gS);(8XV;%M?mY0rY+=f!dwD>;*ujDOzxLJlJpQqPGl}t?
+zvdbbyyZ*BRya63kI3QR?F5!Bq(~@i23j{jZEO?p)PVQ&g$5nWH+wQeRH=;KH1%KpC
+zOa1uGN6$eqNa;ZBvq~|goeZrWoebY+F7xbQI@2$}s^PLu{K4w;vuE4%t^Ia6M^9`K
+zd*wU91%ithd~XWaiYRhjaH)&b6kNofvPd!NpXu^5Q@6D%9(hr?rab{Du&-0@c+|Si
+zwv3f(RWjK#)ua}w&U)dy=;_Rij%jH?`Dq~ec|iG0wW`MC$Y(1euYWzRy}+{O-(Q=X
+zO+G3%jI)HyTg5UL9bY4swdnaDv5ZCcl{b0_|7DuoI_rh`bDe80`!{7Ce70DbiE-Al
+z!@>)c8`sB}a9=QyoW~HW^ZRwgvb*bpxh|N<&SUti%FH<Hb=z^v`ixff1G}yt=lF2j
+zeZe8&1ZyC3!<SSpCK0)%Oj~l57;hO(WXPTF(Xj2*Lq@Zo^5-(u4+Q^lFTTYcP%)*7
+zTd%nG%vPY<i43RX<cr@iw7RP}xG!)4iU=NJ#vV@$3=QUWjKcl95*DT??gpvxboFyt
+I=akR{03qVtB>(^b
+
+literal 0
+HcmV?d00001
+
+diff --git a/textures/up.png b/textures/up.png
+new file mode 100644
+index 0000000000000000000000000000000000000000..7d5d2220b1e2274eccc6774b0f71f015f98323aa
+GIT binary patch
+literal 656
+zcmeAS@N?(olHy`uVBq!ia0vp^3qY8I4M=vMPuFE&U<&tiaSW-r_4dxj%p(pWt{2}P
+z_4QofGSf*_>-g4FJ`avapLDCb|EJiI_l%qzGxz5z&q*aaQzOr1&hk@V=)o-C(6vs!
+z1&AA}_T=6^H=p6Sl9i<EwewtByXwLMK7QTY)U|HDXh_N5XO-KUPJx(j-aXe_aoeiz
+z@nbCq?G-nEMLN1(fB#$hyPNuo6JQQd?>?a3iy*!0!Fty$c=S4*HI(VWzW4L}!Ub!>
+z0#q6LelHCUV*yHYHiQKjf`y_SkA8@BoXU{F`t{q138Eq0Uzvd}Xuj}^amBsY><fXs
+zz1R7jUb8Qlml=C~vz7zLTKR@u>$UyYIIbuIihkApSb6I#&<S5-?6ougu31n8w0#TE
+zCH3$7+}qYHxU~kvRo(aT|JL{`AZ5|^{4r7X+Can8S=Y`N6=?_)u+!FHSgQbZ&0fZ;
+zTfBBaIWSk?0F-vn_Bebvv^ME17f_=HNS}PeraFNrdxq4%3R~(JUVZ=j+`SFNI`zvj
+z<1d5AnF|aY3m8}g92i&?8W@-~7#M+UMj$29z(gVgq=$itmZkxn$P@r_r0U&k;`Mva
+WK9|{({0f-T7(8A5T-G@yGywpk4(?0<
+
+literal 0
+HcmV?d00001
+
+-- 
+1.7.9.5
+
