@@ -1,3 +1,6 @@
 [submodule "MemoryGame/src"]
 	path = MemoryGame/src
 	url = https://github.com/01org/webapps-memory-game-older-kids
+[submodule "HangOnMan/src"]
+	path = HangOnMan/src
+	url = https://github.com/01org/webapps-hangonman
