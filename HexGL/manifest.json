@@ -1,0 +1,16 @@
+{
+  "name": "HexGL",
+  "app": {
+    "launch": {
+      "local_path": "index.html"
+    }
+  },
+  "description": "The futuristic HTML5 racing game by [Thibaut Despoulain](http://bkcore.com)",
+  "version": "0.0.1",
+  "icons": {
+  },
+  "permissions": [],
+  "required_version": "1.29.4.0",
+  "plugin": [],
+  "fullscreen": "True"
+}
