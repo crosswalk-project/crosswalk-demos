@@ -2,7 +2,7 @@
   "name": "MemoryGame",
   "app": {
     "launch": {
-      "local_path": "index.html"
+      "local_path": "app/index.html"
     }
   },
   "description": "A memory game for older kids",
