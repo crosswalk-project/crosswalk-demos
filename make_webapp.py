@@ -19,6 +19,7 @@ Update Web Apps and then build all of them
 
 The build result will be under out directory.
 """
+
 import optparse
 import os
 import shutil
@@ -51,14 +52,34 @@ def RevertManifestFile(current_real_path, app):
   src_folder = os.path.join(current_real_path, app, 'src')
   renamed_jsonfile = os.path.join(src_folder, '_original_manifest.json_')
   target_jsonfile = os.path.join(src_folder, 'manifest.json')
-  if os.path.exists(renamed_jsonfile):
+  if os.path.exists(os.path.join(current_real_path, app, 'manifest.json')):
     os.remove(target_jsonfile)
+  if os.path.exists(renamed_jsonfile):
     shutil.move(renamed_jsonfile, target_jsonfile)
+
+
+def RevertPatchFiles(current_real_path, app):
+  # Check whether it's a git submodule.
+  git_file = os.path.join(current_real_path, app, 'src', '.git')
+  if not os.path.exists(git_file):
+    # It's not a git submodule, no patch files applied.
+    return
+  # cd to submodule dir.
+  previous_cwd = os.getcwd()
+  os.chdir(os.path.join(current_real_path, app, 'src'))
+  # Checkout to master branch.
+  proc = subprocess.Popen(['git', 'checkout', 'master'],
+                          stdout=subprocess.PIPE,
+                          stderr=subprocess.STDOUT)
+  out, _ = proc.communicate()
+  print out
+  # Revert cd.
+  os.chdir(previous_cwd)
 
 
 def RevertPatches(current_real_path, app):
   RevertManifestFile(current_real_path, app)
-  # TODO: Need to be designed for patch files.
+  RevertPatchFiles(current_real_path, app)
 
 
 def CopyManifestFile(current_real_path, app):
@@ -77,9 +98,70 @@ def CopyManifestFile(current_real_path, app):
     shutil.copy2(jsonfile, target_jsonfile)
 
 
+def FindPatchFiles(current_real_path, app, patch_list):
+  app_path = os.path.join(current_real_path, app)
+  # Patch files will be sorted after below scenario.
+  # Because patches should be orderly patched one by one.
+  for i in sorted(os.listdir(app_path)):
+    if os.path.isfile(os.path.join(app_path, i)):
+      extension = os.path.splitext(i)[1][1:].lower()
+      if extension == 'patch':
+        patch_list.append(i)
+
+
+def ApplyPatchFiles(current_real_path, app):
+  # Check whether it's a git submodule.
+  git_file = os.path.join(current_real_path, app, 'src', '.git')
+  if not os.path.exists(git_file):
+    # It's not a git submodule, no patch files needed.
+    return
+
+  patch_list = []
+  FindPatchFiles(current_real_path, app, patch_list)
+
+  if len(patch_list) == 0:
+    return
+
+  # cd to submodule dir.
+  previous_cwd = os.getcwd()
+  os.chdir(os.path.join(current_real_path, app, 'src'))
+  # Checkout to master branch.
+  proc = subprocess.Popen(['git', 'checkout', 'master'],
+                          stdout=subprocess.PIPE,
+                          stderr=subprocess.STDOUT)
+  out, _ = proc.communicate()
+  print out
+
+  # Delete previous auto_patch branch.
+  proc = subprocess.Popen(['git', 'branch', '-D', 'auto_patch'],
+                          stdout=subprocess.PIPE,
+                          stderr=subprocess.STDOUT)
+  out, _ = proc.communicate()
+  print out
+
+  # Create auto_patch branch.
+  proc = subprocess.Popen(['git', 'checkout', '-b', 'auto_patch', 'origin/master'],
+                          stdout=subprocess.PIPE,
+                          stderr=subprocess.STDOUT)
+  out, _ = proc.communicate()
+  print out
+
+  # Apply all the patches.
+  for patch in patch_list:
+    patch_path = os.path.join(current_real_path, app, patch)
+    proc = subprocess.Popen(['git', 'am', patch_path],
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.STDOUT)
+    out, _ = proc.communicate()
+    print out
+
+  # Revert cd.
+  os.chdir(previous_cwd)
+
+
 def ApplyPatches(current_real_path, app):
+  ApplyPatchFiles(current_real_path, app)
   CopyManifestFile(current_real_path, app)
-  # TODO: Apply patch files with the upstream code.
 
 
 def BuildApps(func, current_real_path, app_list, build_result):
