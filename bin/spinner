@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# Copyright (c) 2013 Intel Corporation. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# utility to show progress of a command that is piped to stdin
+
+# usage :
+# $ command |& spinner
+
+declare -a spinstr=('|' '/' '-' '\\');
+i=0;
+
+while read; do
+  /bin/echo -ne ${spinstr[$i]}'\b';
+  i=$(($i+1));
+  if [ "$i" -eq  "4" ]; then
+    i=0;
+  fi;
+done < <(cat "$@");

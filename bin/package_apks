@@ -1,0 +1,38 @@
+#! /bin/bash
+
+# Copyright (c) 2013 Intel Corporation. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# Packages 01.org web apps for Android - all of the apps in
+# $WEBAPPSCLONEDIR, or the one specified on the command line.
+
+# resulting apks are placed in $CROSSWALKDEMOSROOT/apks/
+
+# environment :
+# $CROSSWALKDEMOSROOT = full path of root of crosswalk demos repository
+# $WEBAPPSCLONEDIR = full path of the directory where the apps have been cloned
+
+pushd $CROSSWALKDEMOSROOT/android/xwalk_app_template/;
+
+make_apk=./make_apk.py;
+
+if [[ $# -eq 0 ]]; then
+    pushd $WEBAPPSCLONESDIR;
+    apps=$(ls -1d webapps-*/ | sed 's?/$??');
+    popd;
+else
+    apps=$*;
+fi
+
+for app in $apps;
+do
+    name=${app/webapps-/}
+    root=$WEBAPPSCLONESDIR/$app/build/xpk
+    upper_name=$(awk '/"name"/ { print $2 }' $WEBAPPSCLONESDIR/$app/package.json | tr -d '[",]')
+    version=$(awk '/"version"/ { print $2 }' $WEBAPPSCLONESDIR/$app/package.json | tr -d '[",]')
+    $make_apk --fullscreen --enable-remote-debugging --package=org.org01.webapps.$name --name=_$upper_name --icon=$root/icon_128.png --app-root=$root --app-local-path=index.html
+    mv _${upper_name}.apk $CROSSWALKDEMOSROOT/apks/_${upper_name}_${version}.apk
+done
+
+popd;

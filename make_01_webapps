@@ -1,0 +1,120 @@
+#! /bin/bash
+
+# Copyright (c) 2013 Intel Corporation. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# Script to simplify the process of building apps and packaging the
+# 01.org web apps.
+
+# Just run and wait (it can take a while) :
+# ./make_01_webapps
+#
+# Prior to running this script, you need to run both the make_webapp.py tool
+# to get the android tools, and 'npm install' to get the web build tools.
+#
+# Requires node and npm, which you can get from here :
+#    <http://nodejs.org/download/>
+
+export WEBAPPSCLONESDIR=$PWD/01webapps;
+
+export CROSSWALKDEMOSROOT=$PWD;
+export CROSSWALKDEMOSBIN=$CROSSWALKDEMOSROOT/bin;
+
+# installed via 'npm install'
+export BOWER=$PWD/node_modules/bower/bin/bower;
+export GRUNT=$PWD/node_modules/grunt-cli/bin/grunt;
+
+spinner=$CROSSWALKDEMOSBIN/spinner;
+
+webapps_repos="
+https://github.com/01org/webapps-annex.git
+https://github.com/01org/webapps-bubblewrap.git
+https://github.com/01org/webapps-countingbeads.git
+https://github.com/01org/webapps-flashcards.git
+https://github.com/01org/webapps-go.git
+https://github.com/01org/webapps-hangonman.git
+https://github.com/01org/webapps-make-a-monster.git
+https://github.com/01org/webapps-mancala.git
+https://github.com/01org/webapps-memory-game-older-kids.git
+https://github.com/01org/webapps-memory-match.git
+https://github.com/01org/webapps-numeroo.git
+https://github.com/01org/webapps-rabbit.git
+https://github.com/01org/webapps-scientific-calculator.git
+https://github.com/01org/webapps-shopping-list.git
+https://github.com/01org/webapps-slider-puzzle.git
+https://github.com/01org/webapps-sweetspot.git
+https://github.com/01org/webapps-tenframe.git
+https://github.com/01org/webapps-todo-list.git
+https://github.com/01org/webapps-wordswarm.git
+";
+
+# check apk tools are installed
+if [ ! -x $CROSSWALKDEMOSROOT/android/xwalk_app_template/make_apk.py ]; then
+  echo make_apk.py script not found;
+  echo Try running make_webapp.py first.;
+  exit -1;
+fi;
+
+# check if npm is installed
+if [ ! -x $(which npm) ]; then
+  echo npm not found;
+  echo 'You need to install node (which includes npm) - see <http://nodejs.org/download/>.';
+  exit -1;
+fi;
+
+# check grunt is installed
+if [ ! -x $GRUNT ]; then
+  echo $GRUNT not found;
+  echo Running npm install, but you should probably do this yourself.;
+  npm install |& $spinner;
+fi;
+
+# check bower is installed
+if [ ! -x $BOWER ]; then
+  echo $BOWER not found;
+  echo Running npm install, but you should probably do this yourself.;
+  npm install |& $spinner;
+fi;
+
+# clean out repository directory
+rm -rf $WEBAPPSCLONESDIR;
+mkdir $WEBAPPSCLONESDIR;
+
+if [ ! -d apks ]; then
+  mkdir apks;
+fi
+
+if [ ! -d xpks ]; then
+  mkdir xpks;
+fi
+
+cd $WEBAPPSCLONESDIR;
+
+echo Cloning repos.
+for repo in $webapps_repos; do
+  git clone $repo;
+done |& $spinner
+
+for app in webapps-*; do
+  echo ========== $app ==========
+  cd $app;
+
+  echo Installing plugins and dependencies.
+  (npm install && $BOWER install) |& $spinner;
+
+  echo Building app for xpk target.
+  $GRUNT xpk | $spinner;
+
+  echo Packing app for apk.
+  $CROSSWALKDEMOSBIN/package_apks $app |& $spinner;
+
+  echo Packing app for xpk.
+  $CROSSWALKDEMOSBIN/package_xpks $app |& $spinner;
+
+  cd ..;
+done
+
+echo Done - xpks are in xpks/ and apks are in apks/.
+
+cd ..;
