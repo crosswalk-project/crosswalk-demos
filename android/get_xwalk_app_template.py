@@ -13,14 +13,12 @@ destination directory.
 Sample usage from shell script:
 python get_xwalk_app_template.py --version=1.29.7.0
 """
-import gzip
 import optparse
 import os
 import shutil
 import sys
 import tarfile
 import urllib2
-import urlparse
 import zipfile
 
 from urllib2 import urlopen
@@ -72,8 +70,8 @@ class GetXWalkAppTemplate(object):
       shutil.rmtree(file_dir)
     try:
       crosswalk_zip = zipfile.ZipFile(zip_file_name, 'r')
-      for file in crosswalk_zip.namelist():
-        crosswalk_zip.extract(file, self.dest_dir)
+      for afile in crosswalk_zip.namelist():
+        crosswalk_zip.extract(afile, self.dest_dir)
       crosswalk_zip.close()
     except zipfile.ZipError:
       raise Exception('Error in the process of unzipping crosswalk package.')
@@ -103,8 +101,8 @@ def main():
   parser.add_option('-v', '--version', action='store', dest='version',
                     help=info)
   info = ('The xwalk application template basic url address. Such as: '
-          '--url=https://download.01.org/crosswalk/releases/android/canary')
-  default_url = 'https://download.01.org/crosswalk/releases/android/canary'
+          '--url=https://download.01.org/crosswalk/releases/android-x86/canary')
+  default_url = 'https://download.01.org/crosswalk/releases/android-x86/canary'
   parser.add_option('-u', '--url', action='store', dest='url',
                     default=default_url, help=info)
   info = ('not to download package')
@@ -130,9 +128,9 @@ def main():
       app_template_handler = GetXWalkAppTemplate(url, crosswalk_package_prefix,
                                                  version, file_name, dest_dir)
   else:
-      app_template_handler = GetXWalkAppTemplate(url, crosswalk_package_prefix,
-                                                 version, file_name, dest_dir)
-      app_template_handler.DownloadCrosswalkPackage()
+    app_template_handler = GetXWalkAppTemplate(url, crosswalk_package_prefix,
+                                               version, file_name, dest_dir)
+    app_template_handler.DownloadCrosswalkPackage()
   try:
     app_template_handler.ExtractAppTemplate()
   except tarfile.TarError:
