@@ -16,6 +16,8 @@ Only build for Android
     python make_webapp.py --target=android
 Update Web Apps and then build all of them
     python make_webapp.py -u
+Specify build tool version
+    python make_webapp.py -v 2.31.27.0
 
 The build result will be under out directory.
 """
@@ -173,7 +175,11 @@ def BuildApps(func, current_real_path, app_list, build_result):
   return build_result
 
 
-def RunDownloadScript(options, current_real_path):
+def RunGetBuildToolScript(options, current_real_path):
+  xwalk_app_template_path = os.path.join(current_real_path, 'android', 'xwalk_app_template')
+  # Remove build tool, we need to get new one.
+  if os.path.exists(xwalk_app_template_path):
+    shutil.rmtree(xwalk_app_template_path)
   if not options.version:
     print ('Please use --version or -v argument to specify xwalk application template version\n'
           'Or you can run android/get_xwalk_app_template.py to download')
@@ -186,16 +192,27 @@ def RunDownloadScript(options, current_real_path):
                           stderr=subprocess.STDOUT)
   out, _ = proc.communicate()
   print out
+  # Check whether download xwalk_app_template succeed.
+  if not os.path.exists(xwalk_app_template_path):
+    return False;
   return True
 
 
 def CheckAndroidBuildTool(options, current_real_path):
   xwalk_app_template_path = os.path.join(current_real_path, 'android', 'xwalk_app_template')
-  if not os.path.exists(xwalk_app_template_path):
-    if RunDownloadScript(options, current_real_path):
-      return True
-    return False
-  return True
+
+  # If the version of build tool is specified.
+  # We need to switch to the specified version.
+  if options.version:
+    return RunGetBuildToolScript(options, current_real_path)
+
+  # No build tool version specified.
+  # Use previous build tool.
+  if os.path.exists(xwalk_app_template_path):
+    return True
+  else:
+    # No build tool found, download one.
+    return RunGetBuildToolScript(options, current_real_path)
 
 
 def UpdateWebApps():
@@ -273,7 +290,7 @@ def main():
       help='Update all the Web Apps.')
   parser.add_option('-v', '--version', action='store', dest='version',
       help='The xwalk application template version. '
-           'Such as: --version=1.29.7.0')
+           'Such as: --version=2.31.27.0')
   options, _ = parser.parse_args()
   current_real_path = os.path.abspath(os.path.dirname(sys.argv[0]))
   try:
