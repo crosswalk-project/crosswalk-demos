@@ -47,14 +47,15 @@ class GetXWalkAppTemplate(object):
     """Downloads the crosswalk package to the destination path based on the
     package url address, package prefix and package version number.
     """
+    package_name = self.package_prefix + self.version + '.zip'
+    file_path = os.path.join(self.dest_dir, package_name)
+    # We have previously downloaded, skip download.
+    if os.path.isfile(file_path):
+      return
     package_url = self.url+ '/' + self.package_prefix + self.version + '.zip'
     input_file = urllib2.urlopen(package_url)
     contents = input_file.read()
     input_file.close()
-    package_name = self.package_prefix + self.version + '.zip'
-    file_path = os.path.join(self.dest_dir, package_name)
-    if os.path.isfile(file_path):
-      os.remove(file_path)
     output_file = open(file_path, 'w')
     output_file.write(contents)
     output_file.close()
