@@ -14,8 +14,6 @@ Build specified app
     python make_webapp.py --app=MemoryGame
 Only build for Android
     python make_webapp.py --target=android
-Update Web Apps and then build all of them
-    python make_webapp.py -u
 Specify build tool version
     python make_webapp.py -v 2.31.27.0
 
@@ -69,8 +67,8 @@ def RevertPatchFiles(current_real_path, app):
   # cd to submodule dir.
   previous_cwd = os.getcwd()
   os.chdir(os.path.join(current_real_path, app, 'src'))
-  # Checkout to master branch.
-  proc = subprocess.Popen(['git', 'checkout', 'master'],
+  # Checkout to for_crosswalk branch.
+  proc = subprocess.Popen(['git', 'checkout', 'for_crosswalk'],
                           stdout=subprocess.PIPE,
                           stderr=subprocess.STDOUT)
   out, _ = proc.communicate()
@@ -127,8 +125,8 @@ def ApplyPatchFiles(current_real_path, app):
   # cd to submodule dir.
   previous_cwd = os.getcwd()
   os.chdir(os.path.join(current_real_path, app, 'src'))
-  # Checkout to master branch.
-  proc = subprocess.Popen(['git', 'checkout', 'master'],
+  # Checkout to for_crosswalk branch.
+  proc = subprocess.Popen(['git', 'checkout', 'for_crosswalk'],
                           stdout=subprocess.PIPE,
                           stderr=subprocess.STDOUT)
   out, _ = proc.communicate()
@@ -142,7 +140,7 @@ def ApplyPatchFiles(current_real_path, app):
   print out
 
   # Create auto_patch branch.
-  proc = subprocess.Popen(['git', 'checkout', '-b', 'auto_patch', 'origin/master'],
+  proc = subprocess.Popen(['git', 'checkout', '-b', 'auto_patch', 'for_crosswalk'],
                           stdout=subprocess.PIPE,
                           stderr=subprocess.STDOUT)
   out, _ = proc.communicate()
@@ -215,20 +213,6 @@ def CheckAndroidBuildTool(options, current_real_path):
     return RunGetBuildToolScript(options, current_real_path)
 
 
-def UpdateWebApps():
-  print 'Update submodules..'
-  proc = subprocess.Popen(['git', 'submodule', 'foreach', 'git', 'checkout', 'master'],
-                          stdout=subprocess.PIPE,
-                          stderr=subprocess.STDOUT)
-  out, _ = proc.communicate()
-  print out
-  proc = subprocess.Popen(['git', 'submodule', 'foreach', 'git', 'pull'],
-                          stdout=subprocess.PIPE,
-                          stderr=subprocess.STDOUT)
-  out, _ = proc.communicate()
-  print out
-
-
 def InitWebApps():
   print 'Init submodules..'
   proc = subprocess.Popen(['git', 'submodule', 'update', '--init'],
@@ -236,6 +220,11 @@ def InitWebApps():
                           stderr=subprocess.STDOUT)
   out, _ = proc.communicate()
   print out
+  # The submodule/master branch will always be the latest version.
+  # The branch 'for_crosswalk' will track the workable commit id we specified.
+  proc = subprocess.Popen(['git', 'submodule', 'foreach', 'git', 'checkout', '-b', 'for_crosswalk'],
+                          stdout=subprocess.PIPE,
+                          stderr=subprocess.STDOUT)
 
 
 def Build_WebApps(options, current_real_path, build_result):
@@ -253,10 +242,6 @@ def Build_WebApps(options, current_real_path, build_result):
   # Init git submodules at the first time.
   # (git will automatically check whether need init the next time).
   InitWebApps()
-
-  # Update git submodules if needed.
-  if options.update:
-    UpdateWebApps()
 
   # Build apps.
   if options.target == 'android':
@@ -285,9 +270,6 @@ def main():
       help='Build target. '
            'If no target specified, all targets will be built. '
            'Such as: --target=android')
-  parser.add_option('-u', '--update', action='store_true',
-      dest='update', default=False,
-      help='Update all the Web Apps.')
   parser.add_option('-v', '--version', action='store', dest='version',
       help='The xwalk application template version. '
            'Such as: --version=2.31.27.0')
