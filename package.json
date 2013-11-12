@@ -1,0 +1,22 @@
+{
+  "name": "crosswalk-demos",
+  "version": "0.0.0",
+  "description": "Crosswalk demo aggregator.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/crosswalk-project/crosswalk-demos"
+  },
+  "author": "",
+  "license": "BSD-2-Clause",
+  "bugs": {
+    "url": "https://crosswalk-project.org/jira/secure/Dashboard.jspa"
+  },
+  "devDependencies": {
+    "grunt-cli": "~0.1.9",
+    "bower": "~1.2.7"
+  }
+}
