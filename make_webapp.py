@@ -16,6 +16,8 @@ Only build for Android
     python make_webapp.py --target=android
 Specify build tool version
     python make_webapp.py -v 2.31.27.0
+Specify build tool with the download url
+    python make_webapp.py --version=2.31.27.0 --url=https://download.01.org/crosswalk/releases/android-x86/canary
 
 The build result will be under out directory.
 """
@@ -184,8 +186,13 @@ def RunGetBuildToolScript(options, current_real_path):
     return False
   print 'Downloading xwalk_app_template...'
   version = '--version=' + options.version
+  # The '--url' is valid only when '-v' or '--version' is specified.
+  if options.url:
+    url = '--url=' + options.url
+  else:
+    url = ''
   download_script = os.path.join(current_real_path, 'android', 'get_xwalk_app_template.py')
-  proc = subprocess.Popen(['python', download_script, version],
+  proc = subprocess.Popen(['python', download_script, version, url],
                           stdout=subprocess.PIPE,
                           stderr=subprocess.STDOUT)
   out, _ = proc.communicate()
@@ -273,6 +280,9 @@ def main():
   parser.add_option('-v', '--version', action='store', dest='version',
       help='The xwalk application template version. '
            'Such as: --version=2.31.27.0')
+  parser.add_option('-u', '--url', action='store', dest='url',
+      help='The xwalk application template basic url address. Such as: '
+           '--url=https://download.01.org/crosswalk/releases/android-x86/canary')
   options, _ = parser.parse_args()
   current_real_path = os.path.abspath(os.path.dirname(sys.argv[0]))
   try:
