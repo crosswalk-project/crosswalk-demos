@@ -27,7 +27,7 @@ def MoveApkToOut(apk_path, base_dir, app_name):
     os.remove(apk_destination)
 
   if not os.path.exists(apk_path):
-    print "Build failed"
+    print ("Build failed")
     return 3
 
   # Move the apk in xwalk_app_template to out.
@@ -41,13 +41,13 @@ def BuildApp(base_dir, app_name):
 
   # Check xwalk_app_template.
   if not os.path.exists(make_apk_script):
-    print 'Please install xwalk_app_template'
+    print ('Please install xwalk_app_template')
     return 1
 
   # Check manifest.json file.
   jsonfile = os.path.join(base_dir, app_name, 'src', 'manifest.json')
   if not os.path.exists(jsonfile):
-    print 'No manifest.json found at ' + jsonfile
+    print ('No manifest.json found at ' + jsonfile)
     return 2
 
   manifest = "--manifest=" + jsonfile
@@ -59,7 +59,7 @@ def BuildApp(base_dir, app_name):
   proc = subprocess.Popen(['python', make_apk_script, manifest, build_mode],
                           stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
   out, _ = proc.communicate()
-  print out
+  print (out)
   os.chdir(previous_cwd)
 
   # Move result to out.
