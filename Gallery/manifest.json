@@ -1,0 +1,16 @@
+{
+  "name": "Gallery",
+  "app": {
+    "launch": {
+      "local_path": "index.html"
+    }
+  },
+  "description": "[blueimp Gallery Demo](http://blueimp.github.io/Gallery/)",
+  "version": "2.10.0",
+  "icons": {
+  },
+  "permissions": [],
+  "required_version": "3.31.31.0",
+  "plugin": [],
+  "fullscreen": "True"
+}

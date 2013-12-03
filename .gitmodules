@@ -7,3 +7,6 @@
 [submodule "HexGL/src"]
 	path = HexGL/src
 	url = https://github.com/BKcore/HexGL.git
+[submodule "Gallery/src"]
+	path = Gallery/src
+	url = https://github.com/blueimp/Gallery.git
