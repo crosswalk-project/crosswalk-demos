@@ -51,10 +51,13 @@ def BuildApp(base_dir, app_name):
     return 2
 
   manifest = "--manifest=" + jsonfile
+
+  # Enable embedded mode by default.
+  build_mode = "--mode=embedded"
   previous_cwd = os.getcwd()
   os.chdir(xwalk_app_template_path)
-  proc = subprocess.Popen(['python', make_apk_script, manifest],
-                           stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+  proc = subprocess.Popen(['python', make_apk_script, manifest, build_mode],
+                          stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
   out, _ = proc.communicate()
   print out
   os.chdir(previous_cwd)

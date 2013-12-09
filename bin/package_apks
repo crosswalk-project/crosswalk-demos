@@ -31,7 +31,7 @@ do
     root=$WEBAPPSCLONESDIR/$app/build/xpk
     upper_name=$(awk '/"name"/ { print $2 }' $WEBAPPSCLONESDIR/$app/package.json | tr -d '[",]')
     version=$(awk '/"version"/ { print $2 }' $WEBAPPSCLONESDIR/$app/package.json | tr -d '[",]')
-    $make_apk --fullscreen --enable-remote-debugging --package=org.org01.webapps.$name --name=_$upper_name --icon=$root/icon_128.png --app-root=$root --app-local-path=index.html
+    $make_apk --mode=embedded --fullscreen --enable-remote-debugging --package=org.org01.webapps.$name --name=_$upper_name --icon=$root/icon_128.png --app-root=$root --app-local-path=index.html
     mv _${upper_name}.apk $CROSSWALKDEMOSROOT/apks/_${upper_name}_${version}.apk
 done
 
