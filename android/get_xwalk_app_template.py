@@ -51,14 +51,27 @@ class GetXWalkAppTemplate(object):
     file_path = os.path.join(self.dest_dir, package_name)
     # We have previously downloaded, skip download.
     if os.path.isfile(file_path):
-      return
+      return True
     package_url = self.url+ '/' + self.package_prefix + self.version + '.zip'
-    input_file = urllib2.urlopen(package_url)
-    contents = input_file.read()
-    input_file.close()
-    output_file = open(file_path, 'wb')
-    output_file.write(contents)
-    output_file.close()
+    try:
+      input_file = urllib2.urlopen(package_url)
+    except urllib2.HTTPError, e:
+      print ('[Error]: Failed to open ' + package_url + ' with error HTTP %s.' % e.code)
+      return False
+    except urllib2.URLError, e:
+      print ('[Error]: Failed to download, ', e.reason)
+      return False
+    try:
+      contents = input_file.read()
+      input_file.close()
+      output_file = open(file_path, 'wb')
+      output_file.write(contents)
+      output_file.close()
+    except:
+      print ("[Error]: The file downloaded is broken.")
+      return False
+    return True
+
 
   def __extract_crosswalk_package(self):
     """ Extracts the specific crosswalk package file to the destination
@@ -74,22 +87,31 @@ class GetXWalkAppTemplate(object):
       for afile in crosswalk_zip.namelist():
         crosswalk_zip.extract(afile, self.dest_dir)
       crosswalk_zip.close()
-    except:
-      raise Exception('Error in the process of unzipping crosswalk package.')
+    except zipfile.BadZipfile:
+      print ('[Error]: There is something wrong with ' + zip_file_name)
+      return False
+    except zipfile.LargeZipFile:
+      print ('[Error]: The file %s is too large' % zip_file_name)
+      return False
+    return True
+
 
   def ExtractAppTemplate(self):
     """ Extracts the specific xwalk app template to the destination directory.
     """
-    self.__extract_crosswalk_package()
+    if not self.__extract_crosswalk_package():
+      return
     file_dir = os.path.join(self.dest_dir, self.file_name.split('.tar.gz')[0])
     if os.path.exists(file_dir):
       shutil.rmtree(file_dir)
     file_path = os.path.join(self.dest_dir, self.package_prefix +
                              self.version, self.file_name)
-    tar = tarfile.open(file_path, 'r:gz')
-    tar.extractall(self.dest_dir)
-    tar.close()
-
+    try:
+      tar = tarfile.open(file_path, 'r:gz')
+      tar.extractall(self.dest_dir)
+      tar.close()
+    except:
+      print ('[Error]: Failed to extract ' + file_path)
 
 def main():
   parser = optparse.OptionParser()
@@ -123,19 +145,18 @@ def main():
   if opts.no_downloading:
     if not os.path.exists(os.path.join(dest_dir, crosswalk_package_prefix +
                           version + '.zip')):
-      raise Exception(crosswalk_package_prefix + version + '.zip' +
-                      ' does not exist in %s' % dest_dir)
+      print (crosswalk_package_prefix + version + '.zip' +
+             ' does not exist in %s' % dest_dir)
+      return 2
     else:
       app_template_handler = GetXWalkAppTemplate(url, crosswalk_package_prefix,
                                                  version, file_name, dest_dir)
   else:
     app_template_handler = GetXWalkAppTemplate(url, crosswalk_package_prefix,
                                                version, file_name, dest_dir)
-    app_template_handler.DownloadCrosswalkPackage()
-  try:
-    app_template_handler.ExtractAppTemplate()
-  except tarfile.TarError:
-    raise Exception('Error in the process of tar file.')
+    if not app_template_handler.DownloadCrosswalkPackage():
+      return 3
+  app_template_handler.ExtractAppTemplate()
   return 0
 
 
