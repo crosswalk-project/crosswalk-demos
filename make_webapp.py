@@ -18,6 +18,8 @@ Specify build tool version
     python make_webapp.py -v 2.31.27.0
 Specify build tool with the download url
     python make_webapp.py --version=2.31.27.0 --url=https://download.01.org/crosswalk/releases/android-x86/canary
+Only checkout the webapps with patches patched
+    python make_webapp.py --no-build
 
 The build result will be under out directory.
 """
@@ -250,6 +252,13 @@ def Build_WebApps(options, current_real_path, build_result):
   # (git will automatically check whether need init the next time).
   InitWebApps()
 
+  # If no build needed
+  if options.no_build:
+    for app in app_list:
+      ApplyPatchFiles(current_real_path, app)
+    build_result = 'Webapps are checked out, and patches are patched.'
+    return build_result
+
   # Build apps.
   if options.target == 'android':
     if CheckAndroidBuildTool(options, current_real_path):
@@ -283,13 +292,19 @@ def main():
   parser.add_option('-u', '--url', action='store', dest='url',
       help='The xwalk application template basic url address. Such as: '
            '--url=https://download.01.org/crosswalk/releases/android-x86/canary')
+  parser.add_option('--no-build', action='store_true',
+                    dest='no_build', default=False,
+                    help = 'Only checkout the webapps with patches patched.')
   options, _ = parser.parse_args()
   current_real_path = os.path.abspath(os.path.dirname(sys.argv[0]))
+  previous_cwd = os.getcwd()
+  os.chdir(current_real_path)
   try:
     build_result = Build_WebApps(options, current_real_path, build_result)
   except:
     print 'Unexpected error:', sys.exc_info()[0]
   finally:
+    os.chdir(previous_cwd)
     print build_result
   return 0
 
