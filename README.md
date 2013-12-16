@@ -48,7 +48,10 @@ scripts, is written in bash (standard on many platforms, and comes
 with git on Microsoft Windows).
 
 ## Microsoft Windows support
-This is currently work-in-progress.
+Please refer to below link to setup Windows development environment:
+
+[Developing on Windows]
+(https://crosswalk-project.org/#documentation/developing-on-windows).
 
 ## License
 Crosswalk's code uses the BSD license, see our `LICENSE` file.

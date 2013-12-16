@@ -56,7 +56,7 @@ class GetXWalkAppTemplate(object):
     input_file = urllib2.urlopen(package_url)
     contents = input_file.read()
     input_file.close()
-    output_file = open(file_path, 'w')
+    output_file = open(file_path, 'wb')
     output_file.write(contents)
     output_file.close()
 
@@ -66,7 +66,7 @@ class GetXWalkAppTemplate(object):
     """
     package_name = self.package_prefix + self.version + '.zip'
     zip_file_name = os.path.join(self.dest_dir, package_name)
-    file_dir = self.dest_dir + '/' + self.package_prefix + self.version
+    file_dir = os.path.join(self.dest_dir, self.package_prefix + self.version)
     if os.path.exists(file_dir):
       shutil.rmtree(file_dir)
     try:
@@ -74,14 +74,14 @@ class GetXWalkAppTemplate(object):
       for afile in crosswalk_zip.namelist():
         crosswalk_zip.extract(afile, self.dest_dir)
       crosswalk_zip.close()
-    except zipfile.ZipError:
+    except:
       raise Exception('Error in the process of unzipping crosswalk package.')
 
   def ExtractAppTemplate(self):
     """ Extracts the specific xwalk app template to the destination directory.
     """
     self.__extract_crosswalk_package()
-    file_dir = self.dest_dir + '/' + self.file_name.split('.tar.gz')[0]
+    file_dir = os.path.join(self.dest_dir, self.file_name.split('.tar.gz')[0])
     if os.path.exists(file_dir):
       shutil.rmtree(file_dir)
     file_path = os.path.join(self.dest_dir, self.package_prefix +
@@ -96,7 +96,7 @@ def main():
   info = ('The destination directory name. Such as: '
           '--dest-dir=/')
   parser.add_option('-d', '--dest-dir', action='store', dest='dest_dir',
-                    default='./android', help=info)
+                    default='android', help=info)
   info = ('The xwalk application template version. Such as: '
           '--version=1.29.7.0')
   parser.add_option('-v', '--version', action='store', dest='version',
@@ -121,8 +121,8 @@ def main():
   crosswalk_package_prefix = 'crosswalk-'
   file_name = 'xwalk_app_template.tar.gz'
   if opts.no_downloading:
-    if not os.path.exists(dest_dir + '/' + crosswalk_package_prefix +
-                          version + '.zip'):
+    if not os.path.exists(os.path.join(dest_dir, crosswalk_package_prefix +
+                          version + '.zip')):
       raise Exception(crosswalk_package_prefix + version + '.zip' +
                       ' does not exist in %s' % dest_dir)
     else:

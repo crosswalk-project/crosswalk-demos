@@ -32,6 +32,12 @@ import sys
 
 import android.android_build_app
 
+def RunCommandShell(command):
+  proc = subprocess.Popen(command, stdout=subprocess.PIPE,
+                          stderr=subprocess.STDOUT, shell=True)
+  out, _ = proc.communicate()
+  print (out)
+
 
 def FindApps(app_list):
   for i in os.listdir('.'):
@@ -72,11 +78,7 @@ def RevertPatchFiles(current_real_path, app):
   previous_cwd = os.getcwd()
   os.chdir(os.path.join(current_real_path, app, 'src'))
   # Checkout to for_crosswalk branch.
-  proc = subprocess.Popen(['git', 'checkout', 'for_crosswalk'],
-                          stdout=subprocess.PIPE,
-                          stderr=subprocess.STDOUT)
-  out, _ = proc.communicate()
-  print out
+  RunCommandShell('git checkout for_crosswalk')
   # Revert cd.
   os.chdir(previous_cwd)
 
@@ -130,34 +132,18 @@ def ApplyPatchFiles(current_real_path, app):
   previous_cwd = os.getcwd()
   os.chdir(os.path.join(current_real_path, app, 'src'))
   # Checkout to for_crosswalk branch.
-  proc = subprocess.Popen(['git', 'checkout', 'for_crosswalk'],
-                          stdout=subprocess.PIPE,
-                          stderr=subprocess.STDOUT)
-  out, _ = proc.communicate()
-  print out
+  RunCommandShell('git checkout for_crosswalk')
 
   # Delete previous auto_patch branch.
-  proc = subprocess.Popen(['git', 'branch', '-D', 'auto_patch'],
-                          stdout=subprocess.PIPE,
-                          stderr=subprocess.STDOUT)
-  out, _ = proc.communicate()
-  print out
+  RunCommandShell('git branch -D auto_patch')
 
   # Create auto_patch branch.
-  proc = subprocess.Popen(['git', 'checkout', '-b', 'auto_patch', 'for_crosswalk'],
-                          stdout=subprocess.PIPE,
-                          stderr=subprocess.STDOUT)
-  out, _ = proc.communicate()
-  print out
+  RunCommandShell('git checkout -b auto_patch for_crosswalk')
 
   # Apply all the patches.
   for patch in patch_list:
     patch_path = os.path.join(current_real_path, app, patch)
-    proc = subprocess.Popen(['git', 'am', patch_path],
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.STDOUT)
-    out, _ = proc.communicate()
-    print out
+    RunCommandShell('git am ' + patch_path)
 
   # Revert cd.
   os.chdir(previous_cwd)
@@ -170,7 +156,7 @@ def ApplyPatches(current_real_path, app):
 
 def BuildApps(func, current_real_path, app_list, build_result):
   for app in app_list:
-    print 'Build ' + app + ':'
+    print ('Build ' + app + ':')
     ApplyPatches(current_real_path, app)
     build_result = func(current_real_path, app, build_result)
     RevertPatches(current_real_path, app)
@@ -184,9 +170,9 @@ def RunGetBuildToolScript(options, current_real_path):
     shutil.rmtree(xwalk_app_template_path)
   if not options.version:
     print ('Please use --version or -v argument to specify xwalk application template version\n'
-          'Or you can run android/get_xwalk_app_template.py to download')
+           'Or you can run android/get_xwalk_app_template.py to download')
     return False
-  print 'Downloading xwalk_app_template...'
+  print ('Downloading xwalk_app_template...')
   version = '--version=' + options.version
   # The '--url' is valid only when '-v' or '--version' is specified.
   if options.url:
@@ -198,7 +184,7 @@ def RunGetBuildToolScript(options, current_real_path):
                           stdout=subprocess.PIPE,
                           stderr=subprocess.STDOUT)
   out, _ = proc.communicate()
-  print out
+  print (out)
   # Check whether download xwalk_app_template succeed.
   if not os.path.exists(xwalk_app_template_path):
     return False;
@@ -223,17 +209,11 @@ def CheckAndroidBuildTool(options, current_real_path):
 
 
 def InitWebApps():
-  print 'Init submodules..'
-  proc = subprocess.Popen(['git', 'submodule', 'update', '--init'],
-                          stdout=subprocess.PIPE,
-                          stderr=subprocess.STDOUT)
-  out, _ = proc.communicate()
-  print out
+  print ('Init submodules..')
+  RunCommandShell('git submodule update --init')
   # The submodule/master branch will always be the latest version.
   # The branch 'for_crosswalk' will track the workable commit id we specified.
-  proc = subprocess.Popen(['git', 'submodule', 'foreach', 'git', 'checkout', '-b', 'for_crosswalk'],
-                          stdout=subprocess.PIPE,
-                          stderr=subprocess.STDOUT)
+  RunCommandShell('git submodule foreach git checkout -b for_crosswalk')
 
 
 def Build_WebApps(options, current_real_path, build_result):
@@ -266,12 +246,12 @@ def Build_WebApps(options, current_real_path, build_result):
     else:
       build_result += 'No Build tools\n'
   elif options.target == 'tizen':
-    print 'Tizen build not implemented'
+    print ('Tizen build not implemented')
   else:
     if CheckAndroidBuildTool(options, current_real_path):
       build_result = BuildApps(BuildForAndroidApp, current_real_path, app_list, build_result)
     else:
-      build_result += 'No Build tools\n'
+      build_result += ('No Build tools\n')
   return build_result
 
 
@@ -293,8 +273,8 @@ def main():
       help='The xwalk application template basic url address. Such as: '
            '--url=https://download.01.org/crosswalk/releases/android-x86/canary')
   parser.add_option('--no-build', action='store_true',
-                    dest='no_build', default=False,
-                    help = 'Only checkout the webapps with patches patched.')
+      dest='no_build', default=False,
+      help = 'Only checkout the webapps with patches patched.')
   options, _ = parser.parse_args()
   current_real_path = os.path.abspath(os.path.dirname(sys.argv[0]))
   previous_cwd = os.getcwd()
@@ -302,10 +282,10 @@ def main():
   try:
     build_result = Build_WebApps(options, current_real_path, build_result)
   except:
-    print 'Unexpected error:', sys.exc_info()[0]
+    print ('Unexpected error:', sys.exc_info()[0])
   finally:
     os.chdir(previous_cwd)
-    print build_result
+    print (build_result)
   return 0
 
 
