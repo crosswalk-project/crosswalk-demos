@@ -32,11 +32,11 @@ import sys
 
 import android.android_build_app
 
-def RunCommandShell(command):
+def RunCommandShell(command, app):
   proc = subprocess.Popen(command, stdout=subprocess.PIPE,
                           stderr=subprocess.STDOUT, shell=True)
   out, _ = proc.communicate()
-  print (out)
+  print ('[' + app + ']: ' + out)
 
 
 def FindApps(app_list):
@@ -78,7 +78,7 @@ def RevertPatchFiles(current_real_path, app):
   previous_cwd = os.getcwd()
   os.chdir(os.path.join(current_real_path, app, 'src'))
   # Checkout to for_crosswalk branch.
-  RunCommandShell('git checkout for_crosswalk')
+  RunCommandShell('git checkout for_crosswalk', app)
   # Revert cd.
   os.chdir(previous_cwd)
 
@@ -132,18 +132,18 @@ def ApplyPatchFiles(current_real_path, app):
   previous_cwd = os.getcwd()
   os.chdir(os.path.join(current_real_path, app, 'src'))
   # Checkout to for_crosswalk branch.
-  RunCommandShell('git checkout for_crosswalk')
+  RunCommandShell('git checkout for_crosswalk', app)
 
   # Delete previous auto_patch branch.
-  RunCommandShell('git branch -D auto_patch')
+  RunCommandShell('git branch -D auto_patch', app)
 
   # Create auto_patch branch.
-  RunCommandShell('git checkout -b auto_patch for_crosswalk')
+  RunCommandShell('git checkout -b auto_patch for_crosswalk', app)
 
   # Apply all the patches.
   for patch in patch_list:
     patch_path = os.path.join(current_real_path, app, patch)
-    RunCommandShell('git am ' + patch_path)
+    RunCommandShell('git am ' + patch_path, app)
 
   # Revert cd.
   os.chdir(previous_cwd)
@@ -208,12 +208,22 @@ def CheckAndroidBuildTool(options, current_real_path):
     return RunGetBuildToolScript(options, current_real_path)
 
 
-def InitWebApps():
+def InitWebApps(current_real_path, app_list):
   print ('Init submodules..')
-  RunCommandShell('git submodule update --init')
+  RunCommandShell('git submodule update --init', '')
   # The submodule/master branch will always be the latest version.
   # The branch 'for_crosswalk' will track the workable commit id we specified.
-  RunCommandShell('git submodule foreach git checkout -b for_crosswalk')
+  for app in app_list:
+    # Check whether it's a git submodule.
+    git_file = os.path.join(current_real_path, app, 'src', '.git')
+    if not os.path.exists(git_file):
+      # It's not a git submodule, no patch files needed.
+      continue
+    # cd to submodule dir.
+    previous_cwd = os.getcwd()
+    os.chdir(os.path.join(current_real_path, app, 'src'))
+    RunCommandShell('git checkout -b for_crosswalk', app)
+    os.chdir(previous_cwd)
 
 
 def Build_WebApps(options, current_real_path, build_result):
@@ -230,7 +240,7 @@ def Build_WebApps(options, current_real_path, build_result):
 
   # Init git submodules at the first time.
   # (git will automatically check whether need init the next time).
-  InitWebApps()
+  InitWebApps(current_real_path, app_list)
 
   # If no build needed
   if options.no_build:
