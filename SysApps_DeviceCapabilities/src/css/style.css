@@ -1,0 +1,22 @@
+body {
+  min-height: 1000px;
+  padding-top: 30px;
+}
+
+canvas {
+  padding: 0 0 0 20px;
+}
+
+#content {
+  padding: 5px;
+  overflow-y: scroll;
+}
+
+#cpu-graph {
+  background: #fff;
+}
+
+#memory-bank {
+  width: 300px;
+  height: 100px;
+}
