@@ -15,8 +15,3 @@ canvas {
 #cpu-graph {
   background: #fff;
 }
-
-#memory-bank {
-  width: 300px;
-  height: 100px;
-}
