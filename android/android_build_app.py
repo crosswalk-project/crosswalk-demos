@@ -26,10 +26,6 @@ def MoveApkToOut(apk_path, base_dir, app_name):
   if os.path.exists(apk_destination):
     os.remove(apk_destination)
 
-  if not os.path.exists(apk_path):
-    print ("Build failed")
-    return 3
-
   # Move the apk in xwalk_app_template to out.
   shutil.move(apk_path, apk_destination)
   return 0
@@ -63,5 +59,19 @@ def BuildApp(base_dir, app_name):
   os.chdir(previous_cwd)
 
   # Move result to out.
+  # From v3.32.51.0, the apk name is different, there is a tail after app name.
+  # We need to check all.
   apk_path = os.path.join(xwalk_app_template_path, app_name)
-  return MoveApkToOut(apk_path + '.apk', base_dir, app_name)
+  apk_path_arm = apk_path + '_arm'
+  apk_path_x86 = apk_path + '_x86'
+
+  if os.path.exists(apk_path + '.apk'):
+    return MoveApkToOut(apk_path + '.apk', base_dir, app_name)
+  elif os.path.exists(apk_path_x86 + '.apk'):
+    return MoveApkToOut(apk_path_x86 + '.apk', base_dir, app_name + '_x86')
+  elif os.path.exists(apk_path_arm + '.apk'):
+    return MoveApkToOut(apk_path_arm + '.apk', base_dir, app_name + '_arm')
+  else:
+    print ('[Error]: Can\'t find the web application APK, Failed to build.')
+    return 3
+

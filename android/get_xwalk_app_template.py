@@ -42,25 +42,48 @@ class GetXWalkAppTemplate(object):
     self.version = version
     self.file_name = file_name
     self.dest_dir = dest_dir
+    self.arch = ''
 
   def DownloadCrosswalkPackage(self):
     """Downloads the crosswalk package to the destination path based on the
     package url address, package prefix and package version number.
     """
-    package_name = self.package_prefix + self.version + '.zip'
+    if 'arm' in self.url:
+      self.arch = '-arm'
+    elif 'x86' in self.url:
+      self.arch = '-x86'
+    else:
+      print '[Error]: Invalid url ' + self.url
+      return False
+    package_name = self.package_prefix + self.version + self.arch + '.zip'
     file_path = os.path.join(self.dest_dir, package_name)
     # We have previously downloaded, skip download.
     if os.path.isfile(file_path):
       return True
-    package_url = self.url+ '/' + self.package_prefix + self.version + '.zip'
+    succeed = False
+    error_str = ''
+    package_url = self.url + '/' + self.package_prefix + self.version + self.arch + '.zip'
+    print ('Try with url ' + package_url)
     try:
       input_file = urllib2.urlopen(package_url)
+      succeed = True
     except urllib2.HTTPError, e:
-      print ('[Error]: Failed to open ' + package_url + ' with error HTTP %s.' % e.code)
-      return False
-    except urllib2.URLError, e:
-      print ('[Error]: Failed to download, ', e.reason)
-      return False
+      error_str += ('[Error]: Failed to open ' + package_url + ' with error HTTP %s.\n' % e.code)
+    except:
+      error_str += ('[Error]: Failed to download, ' + package_url + '\n')
+    if not succeed:
+      package_url = self.url+ '/' + self.package_prefix + self.version + '.zip'
+      print ('Retry with url: ' + package_url)
+      try:
+        input_file = urllib2.urlopen(package_url)
+      except urllib2.HTTPError, e:
+        error_str += ('[Error]: Failed to open ' + package_url + ' with error HTTP %s.' % e.code)
+        print error_str
+        return False
+      except:
+        error_str += ('[Error]: Failed to download, ' + package_url + '\n')
+        print error_str
+        return False
     try:
       contents = input_file.read()
       input_file.close()
@@ -68,7 +91,7 @@ class GetXWalkAppTemplate(object):
       output_file.write(contents)
       output_file.close()
     except:
-      print ("[Error]: The file downloaded is broken.")
+      print ("[Error]: The downloaded file is broken.")
       return False
     return True
 
@@ -77,9 +100,9 @@ class GetXWalkAppTemplate(object):
     """ Extracts the specific crosswalk package file to the destination
     directory. It is an internally used function.
     """
-    package_name = self.package_prefix + self.version + '.zip'
+    package_name = self.package_prefix + self.version + self.arch + '.zip'
     zip_file_name = os.path.join(self.dest_dir, package_name)
-    file_dir = os.path.join(self.dest_dir, self.package_prefix + self.version)
+    file_dir = os.path.join(self.dest_dir, self.package_prefix + self.version + self.arch)
     if os.path.exists(file_dir):
       shutil.rmtree(file_dir)
     try:
@@ -93,6 +116,16 @@ class GetXWalkAppTemplate(object):
     except zipfile.LargeZipFile:
       print ('[Error]: The file %s is too large' % zip_file_name)
       return False
+    except:
+      print ('[Error]: Failed to open ' + zip_file_name)
+      return False
+    # Before v3.32.51.0, there is no arch tail, add it manually.
+    if not os.path.exists(file_dir):
+      origin_file_dir = os.path.join(self.dest_dir, self.package_prefix + self.version)
+      if not os.path.exists(origin_file_dir):
+        print ('[Error]: Unzip failed.')
+        return False
+      os.rename(origin_file_dir, file_dir)
     return True
 
 
@@ -105,7 +138,7 @@ class GetXWalkAppTemplate(object):
     if os.path.exists(file_dir):
       shutil.rmtree(file_dir)
     file_path = os.path.join(self.dest_dir, self.package_prefix +
-                             self.version, self.file_name)
+                             self.version + self.arch, self.file_name)
     try:
       tar = tarfile.open(file_path, 'r:gz')
       tar.extractall(self.dest_dir)
