@@ -71,7 +71,8 @@ function showCPU() {
     var canvas = $('#cpu-graph')[0];
     var context = canvas.getContext('2d');
 
-    canvas.width = canvas.width;  // Clear the whole canvas
+    canvas.width = window.innerWidth * 2 / 3; // Clear the whole canvas
+    canvas.height = canvas.width / 2;
     // Draw the coordinate axis
     context.fillText('100', 0, PADDING_TOP / 2);
     context.fillText('Usage', PADDING_LEFT + 1, PADDING_TOP / 2);
@@ -132,6 +133,8 @@ function showMemory() {
     var context = canvas.getContext('2d');
     var radius = 20;
 
+    canvas.width = window.innerWidth * 2 / 3;
+    canvas.height = canvas.width / 3;
     // First clear the whole bank
     context.fillStyle = COLOR_GRAY;
     drawRoundRect(context, 0, 0, canvas.width, canvas.height, radius, true);
@@ -169,15 +172,15 @@ function showStorage() {
         (numStorage > 1 ? 's' : '') + ':<br />');
 
     for (var i = 0; i < numStorage; ++i) {
-      node.append(storages[i].id + '. ');
+      node.append((i + 1) + '. ');
       node.append(storages[i].name + '<br />');
       node.append('<canvas id="storage' + storages[i].id + '"></canvas><br />');
       var canvas = $('#storage' + storages[i].id)[0];
       var context = canvas.getContext('2d');
       var radius = 5;
 
-      canvas.width = 240;
-      canvas.height = 30;
+      canvas.width = window.innerWidth * 2 / 3;
+      canvas.height = canvas.width / 6;
       context.fillStyle = COLOR_GRAY;
       drawRoundRect(context, 0, 0, canvas.width, canvas.height, radius, true);
 
