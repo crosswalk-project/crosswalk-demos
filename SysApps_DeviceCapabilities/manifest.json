@@ -1,14 +1,10 @@
 {
   "name": "SysApps_DeviceCapabilities",
-  "app": {
-    "launch": {
-      "local_path": "index.html"
-    }
-  },
-  "description": "A demo for W3C SysApps DeviceCapabilities API.",
-  "version": "0.0.1",
+  "start_url": "index.html",
+  "xwalk_description": "A demo for W3C SysApps DeviceCapabilities API.",
+  "xwalk_version": "0.0.1",
   "icons": {
     "128": "images/icon_128.png"
   },
-  "fullscreen": "true"
+  "display": ["fullscreen"]
 }
