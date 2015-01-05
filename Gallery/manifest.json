@@ -1,16 +1,12 @@
 {
   "name": "Gallery",
-  "app": {
-    "launch": {
-      "local_path": "index.html"
-    }
-  },
-  "description": "[blueimp Gallery Demo](http://blueimp.github.io/Gallery/)",
-  "version": "2.10.0",
+  "start_url": "index.html",
+  "xwalk_description": "[blueimp Gallery Demo](http://blueimp.github.io/Gallery/)",
+  "xwalk_version": "2.10.0",
   "icons": {
   },
-  "permissions": [],
+  "xwalk_permissions": [],
   "required_version": "3.31.31.0",
   "plugin": [],
-  "fullscreen": "True"
+  "display": ["fullscreen"]
 }
