@@ -1,13 +1,14 @@
 {
   "name": "MemoryGame",
   "start_url": "app/index.html",
+  "display": "fullscreen",
   "xwalk_description": "A memory game for older kids",
-  "xwalk_version": "1.0",
-  "icons": {
-    "128": "icon_128.png"
-  },
-  "xwalk_permissions": [],
-  "required_version": "1.29.4.0",
-  "plugin": [],
-  "display": ["fullscreen"]
+  "xwalk_app_version": "1.0",
+  "xwalk_package_id": "org.xwalk.memorygame",
+  "icons": [
+    {
+      "src": "icon_128.png",
+      "sizes": "128x128"
+    }
+ ]
 }

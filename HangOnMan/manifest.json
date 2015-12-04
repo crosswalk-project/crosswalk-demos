@@ -1,15 +1,13 @@
 {
   "name": "HangOnMan",
   "start_url": "app/index.html",
+  "display": "fullscreen",
   "xwalk_description": "Classic Hangman Game",
-  "xwalk_version": "0.0.1",
-  "icons": {
-    "16": "icon_16.png",
-    "48": "icon_64.png",
-    "128": "icon_128.png"
-  },
-  "xwalk_permissions": [],
-  "required_version": "1.29.4.0",
-  "plugin": [],
-  "display": ["fullscreen"]
+  "xwalk_app_version": "0.0.1",
+  "xwalk_package_id": "org.xwalk.hangonman",
+  "icons": [
+    {"src":"icon_16.png", "sizes":"16x16"},
+    {"src":"icon_64.png", "sizes":"64x64"},
+    {"src":"icon_128.png", "sizes":"128x128"}
+  ]
 }
